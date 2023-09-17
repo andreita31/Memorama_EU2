@@ -42,8 +42,8 @@
         const ctx = canvas.getContext("2d");
         
         var music = document.getElementById("music");
-        var plop = document.getElementById("plop");
-        // var plop = document.getElementById("plop");
+        var click = document.getElementById("click");
+        var pairs = document.getElementById("pairs");
 
         const dorso = document.getElementById("dorso");
         const arthur = document.getElementById("arthur");
@@ -62,7 +62,7 @@
         const snape = document.getElementById("snape");
         const twins = document.getElementById("twins");
         
-        var flipped_card = '', pairs = 0, paused = true;
+        var paused = true;
 
         const img_arr = [arthur, bellatrix, bill, draco, dumbledore, ginny, hagrid, harry, hermione, luna, minerva, newt, ron, snape, twins];
         const mixed_array = [];//Arreglo de imágenes con posiciones mezcladas
@@ -70,7 +70,7 @@
         // var flipped_arr = ['', ''];
         var flipped_first = '', flipped_second = '';
         const card_size = 150, gap = 20;
-        const count = 0;
+        var count = 0;
 
         const board_w = canvas.width;
         const board_h = card_size * 3;
@@ -100,15 +100,20 @@
             click(x_pointer, y_pointer){
                 if (Card.animating) return;
                 if (this.x < x_pointer && x_pointer < this.x + card_size && this.y < y_pointer && y_pointer < this.y + card_size){
+                    click.play();
                     this.flipped = true;
                     if(Card.first_flipped == this) return;
                     if(Card.first_flipped == null)
                         Card.first_flipped = this;
                     else{
                         if(Card.first_flipped.image == this.image){
-                            this.removed_card = true;
-                            Card.first_flipped.removed_card = true;
-                            Card.first_flipped = null;
+                            setTimeout(()=>{
+                                pairs.play();
+                                this.removed_card = true;
+                                Card.first_flipped.removed_card = true;
+                                Card.first_flipped = null;
+                                count++;
+                            }, 1000)
                         }else{
                             Card.animating = true;
                             setTimeout(() => {
@@ -123,15 +128,15 @@
             }
 
             paint() {
-                if(this.flipped == true){
-                    if(this.removed_card == true){
-                        ctx.fillStyle = "white";
-                        ctx.fillRect(this.x, this.y, this.w, this.h)
-                    }else{
-                        ctx.drawImage(this.image,this.x, this.y, this.w, this.h);
-                    }
+                if(this.removed_card == true){
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(this.x, this.y, this.w, this.h)
                 }else{
-                    ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
+                    if(this.flipped == true){
+                        ctx.drawImage(this.image,this.x, this.y, this.w, this.h);
+                    }else{
+                        ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
+                    }
                 }
             }
         }
@@ -173,10 +178,10 @@
         givePositions();
 
         canvas.addEventListener("click", (e)=>{
-            // plop.play();
             for(let i = 0; i < cards_arr.length; i++){
                 cards_arr[i].click(e.offsetX, e.offsetY);
             }
+            // console.log(count)
         })
 
         function repaint(){
@@ -185,28 +190,43 @@
             for(let i = 0; i < cards_arr.length; i++){
                 cards_arr[i].paint();
             }
-            // music.play();
+            // ctx.font = "10px Arial";
+            // ctx.fillStyle = "black";
+            // ctx.fillText(cen, 650, 300);
+            music.play();
         }
 
-        // console.log(cards_arr)
+        function winScreen(){
+            ctx.fillStyle = "rgba(155, 155, 155, .01)";
+            ctx.fillRect(0, 0, 1500, 600);
+            ctx.font = "50px Arial";
+            ctx.fillStyle = "green";
+            ctx.fillText("Haz ganado", 650, 300);
+            music.pause();
+        }
+
+        console.log(cards_arr)
         function pausedScreen(){
-            // music.pause();
+            music.pause();
             ctx.fillStyle = "rgba(155, 155, 155, .01)";
             ctx.fillRect(0, 0, 1500, 600);
             ctx.font = "50px Arial";
             ctx.fillStyle = "black";
             ctx.fillText("Pause", 650, 300);
+            ctx.fillStyle = "red";
+            ctx.fillText("Press P", 635, 350);
         }
         
         function update(){
             window.requestAnimationFrame(update);
             if (!paused){
-                for(let i = 0; i < cards_arr.length; i++){
-                    if(cards_arr[i].removed_card == true){
-                        count ++;
-                    }
+                if(count == cards_arr.length){
+                    setTimeout(()=>{
+                        winScreen();
+                    }, 2000)
+                }else{
+                    repaint();
                 }
-                repaint();
             }else{
                 pausedScreen();
             }
