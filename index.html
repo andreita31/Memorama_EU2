@@ -32,11 +32,19 @@
     <img id="ron" src="img/ron.jpg" alt="ron">
     <img id="snape" src="img/snape.jpg" alt="snape">
     <img id="twins" src="img/twins.jpg" alt="twins">
+    
+    <audio src="sounds/vin-harry-potter.mp3" type="audio/mp3" id="music"></audio>
+    <audio src="sounds/plop2.mp3" type="audio/mp3" id="click"></audio>
+    <audio src="sounds/protego.mp3" type="audio/mp3" id="pairs"></audio>
 
     <script>
         const canvas = document.getElementById("myCanvas");
         const ctx = canvas.getContext("2d");
         
+        var music = document.getElementById("music");
+        var plop = document.getElementById("plop");
+        // var plop = document.getElementById("plop");
+
         const dorso = document.getElementById("dorso");
         const arthur = document.getElementById("arthur");
         const bellatrix = document.getElementById("bellatrix");
@@ -54,44 +62,15 @@
         const snape = document.getElementById("snape");
         const twins = document.getElementById("twins");
         
-        var flipped_card = '';
+        var flipped_card = '', pairs = 0, paused = true;
 
-        class Card {
-            constructor(image, x, y, w, h, flipped, dorso) {
-                this.image = image;
-                this.x = x;
-                this.y = y;
-                this.w = w;
-                this.h = h;
-                this.flipped = flipped;
-                this.dorso = dorso;
-                // this.id = id;
-            }
-
-            click(x_pointer, y_pointer){
-                if (this.x < x_pointer && x_pointer < this.x + card_size && this.y < y_pointer && y_pointer < this.y + card_size){
-                    this.flipped = true;
-                    // flipped_cards[0] = this.image.id;
-                    // return this.image.id;
-                }   
-            }
-
-            paint() {
-                if(this.flipped == true){
-                    ctx.drawImage(this.image,this.x, this.y, this.w, this.h);
-                    if(flipped_card != this.image.id){
-                        ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
-                    }
-                }else{
-                    ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
-                }
-            }
-        }
-        
         const img_arr = [arthur, bellatrix, bill, draco, dumbledore, ginny, hagrid, harry, hermione, luna, minerva, newt, ron, snape, twins];
         const mixed_array = [];//Arreglo de imágenes con posiciones mezcladas
         const cards_arr = [];//Arreglo de objetos Card
+        // var flipped_arr = ['', ''];
+        var flipped_first = '', flipped_second = '';
         const card_size = 150, gap = 20;
+        const count = 0;
 
         const board_w = canvas.width;
         const board_h = card_size * 3;
@@ -104,14 +83,68 @@
         // console.log(ini_x);
         // console.log(ini_y);
 
-        let pairs = 0;
+        class Card {
+            static first_flipped = null;
+            static animating = false;
+            constructor(image, x, y, w, h, flipped, dorso, removed_card) {
+                this.image = image;
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.flipped = flipped;
+                this.dorso = dorso;
+                this.removed_card = removed_card;
+            }
+
+            click(x_pointer, y_pointer){
+                if (Card.animating) return;
+                if (this.x < x_pointer && x_pointer < this.x + card_size && this.y < y_pointer && y_pointer < this.y + card_size){
+                    this.flipped = true;
+                    if(Card.first_flipped == this) return;
+                    if(Card.first_flipped == null)
+                        Card.first_flipped = this;
+                    else{
+                        if(Card.first_flipped.image == this.image){
+                            this.removed_card = true;
+                            Card.first_flipped.removed_card = true;
+                            Card.first_flipped = null;
+                        }else{
+                            Card.animating = true;
+                            setTimeout(() => {
+                                Card.first_flipped.flipped = false;
+                                this.flipped = false;
+                                Card.animating = false;
+                                Card.first_flipped = null;
+                            }, 1000)
+                        }
+                    }
+                } 
+            }
+
+            paint() {
+                if(this.flipped == true){
+                    if(this.removed_card == true){
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(this.x, this.y, this.w, this.h)
+                    }else{
+                        ctx.drawImage(this.image,this.x, this.y, this.w, this.h);
+                    }
+                }else{
+                    ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
+                }
+            }
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if(e.keyCode == 80) {
+                paused = !paused;
+            }
+        })
 
         function fillArray(){
-            var arr_len = 0;
             for (let i = 0; i < (img_arr.length * 2); i++) {
-                mixed_array[i] = img_arr[arr_len];
-                arr_len++;
-                if(arr_len == img_arr.length) arr_len = 0
+                mixed_array[i] = img_arr[i % img_arr.length];
             }
         }
         fillArray();
@@ -127,33 +160,23 @@
             }
         }
         mixCards();
-        // console.log(mixed_array[0].id);
-        // console.log(mixed_array[0]);
         
         function givePositions(){
             var aux = 0;
             for (let i = ini_y; i < board_h; i+=(card_size)) {
                 for (let j = ini_x; j < board_w; j+=(card_size)) {
-                    cards_arr.push(new Card(mixed_array[aux], j, i, card_size, card_size, false, dorso));
+                    cards_arr.push(new Card(mixed_array[aux], j, i, card_size, card_size, false, dorso, false));
                     aux++;
                 }
             }
         }
         givePositions();
-        // console.log(cards_arr[0]);
-        // console.log(cards_arr[0].image.id);
 
         canvas.addEventListener("click", (e)=>{
-            flipped_card = '';
+            // plop.play();
             for(let i = 0; i < cards_arr.length; i++){
                 cards_arr[i].click(e.offsetX, e.offsetY);
-                if(cards_arr[i].flipped){
-                    // console.log("id", cards_arr[i].image.id);
-                    flipped_card = cards_arr[i].image.id;
-                }
             }
-            console.log("id", flipped_card);
-            // console.log(e);
         })
 
         function repaint(){
@@ -162,15 +185,30 @@
             for(let i = 0; i < cards_arr.length; i++){
                 cards_arr[i].paint();
             }
+            // music.play();
         }
-        console.log(cards_arr);
+
+        // console.log(cards_arr)
+        function pausedScreen(){
+            // music.pause();
+            ctx.fillStyle = "rgba(155, 155, 155, .01)";
+            ctx.fillRect(0, 0, 1500, 600);
+            ctx.font = "50px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Pause", 650, 300);
+        }
+        
         function update(){
             window.requestAnimationFrame(update);
-            // repaint();
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, 1500, 600);
-            for(let i = 0; i < cards_arr.length; i++){
-                cards_arr[i].paint();
+            if (!paused){
+                for(let i = 0; i < cards_arr.length; i++){
+                    if(cards_arr[i].removed_card == true){
+                        count ++;
+                    }
+                }
+                repaint();
+            }else{
+                pausedScreen();
             }
         }
 
