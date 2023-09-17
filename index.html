@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama</title>
+    <style>
+        canvas {
+            display: block;
+            margin: auto;
+        }
+        img{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="1500" height="600" style="border:1px solid grey"></canvas>
+    <img id="dorso" src="img/dorso.jpg" alt="dorso">
+    <img id="arthur" src="img/arthur.jpg" alt="arthur">
+    <img id="bellatrix" src="img/bellatrix.jpg" alt="bellatrix">
+    <img id="bill" src="img/bill.jpg" alt="bill">
+    <img id="draco" src="img/draco.jpg" alt="draco">
+    <img id="dumbledore" src="img/dumbledore.jpg" alt="dumbledore">
+    <img id="ginny" src="img/ginny.jpg" alt="ginny">
+    <img id="hagrid" src="img/hagrid.jpg" alt="hagrid">
+    <img id="harry" src="img/harry.jpg" alt="harry">
+    <img id="hermione" src="img/hermione.jpg" alt="hermione">
+    <img id="luna" src="img/luna.jpg" alt="luna">
+    <img id="minerva" src="img/minerva.jpg" alt="minerva">
+    <img id="newt" src="img/newt.jpg" alt="newt">
+    <img id="ron" src="img/ron.jpg" alt="ron">
+    <img id="snape" src="img/snape.jpg" alt="snape">
+    <img id="twins" src="img/twins.jpg" alt="twins">
+
+    <script>
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        const dorso = document.getElementById("dorso");
+        const arthur = document.getElementById("arthur");
+        const bellatrix = document.getElementById("bellatrix");
+        const bill = document.getElementById("bill");
+        const draco = document.getElementById("draco");
+        const dumbledore = document.getElementById("dumbledore");
+        const ginny = document.getElementById("ginny");
+        const hagrid = document.getElementById("hagrid");
+        const harry = document.getElementById("harry");
+        const hermione = document.getElementById("hermione");
+        const luna = document.getElementById("luna");
+        const minerva = document.getElementById("minerva");
+        const newt = document.getElementById("newt");
+        const ron = document.getElementById("ron");
+        const snape = document.getElementById("snape");
+        const twins = document.getElementById("twins");
+        
+        var flipped_card = '';
+
+        class Card {
+            constructor(image, x, y, w, h, flipped, dorso) {
+                this.image = image;
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.flipped = flipped;
+                this.dorso = dorso;
+                // this.id = id;
+            }
+
+            click(x_pointer, y_pointer){
+                if (this.x < x_pointer && x_pointer < this.x + card_size && this.y < y_pointer && y_pointer < this.y + card_size){
+                    this.flipped = true;
+                    // flipped_cards[0] = this.image.id;
+                    // return this.image.id;
+                }   
+            }
+
+            paint() {
+                if(this.flipped == true){
+                    ctx.drawImage(this.image,this.x, this.y, this.w, this.h);
+                    if(flipped_card != this.image.id){
+                        ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
+                    }
+                }else{
+                    ctx.drawImage(this.dorso, this.x, this.y, this.w, this.h);
+                }
+            }
+        }
+        
+        const img_arr = [arthur, bellatrix, bill, draco, dumbledore, ginny, hagrid, harry, hermione, luna, minerva, newt, ron, snape, twins];
+        const mixed_array = [];//Arreglo de imágenes con posiciones mezcladas
+        const cards_arr = [];//Arreglo de objetos Card
+        const card_size = 150, gap = 20;
+
+        const board_w = canvas.width;
+        const board_h = card_size * 3;
+        const ini_x = ((canvas.width - board_w) / 2);
+        const ini_y = ((canvas.height - board_h) / 2) + gap;
+        // console.log(board_w);
+        // console.log(canvas.width);
+        // console.log(board_h);
+        // console.log(canvas.height);
+        // console.log(ini_x);
+        // console.log(ini_y);
+
+        let pairs = 0;
+
+        function fillArray(){
+            var arr_len = 0;
+            for (let i = 0; i < (img_arr.length * 2); i++) {
+                mixed_array[i] = img_arr[arr_len];
+                arr_len++;
+                if(arr_len == img_arr.length) arr_len = 0
+            }
+        }
+        fillArray();
+        
+        function mixCards(){
+            var aux;
+            
+            for (let i = 0; i < mixed_array.length; i++) {
+                var numRand = Math.floor(Math.random() * 10);
+                aux = mixed_array[i];
+                mixed_array[i] = mixed_array[numRand];
+                mixed_array[numRand] = aux;
+            }
+        }
+        mixCards();
+        // console.log(mixed_array[0].id);
+        // console.log(mixed_array[0]);
+        
+        function givePositions(){
+            var aux = 0;
+            for (let i = ini_y; i < board_h; i+=(card_size)) {
+                for (let j = ini_x; j < board_w; j+=(card_size)) {
+                    cards_arr.push(new Card(mixed_array[aux], j, i, card_size, card_size, false, dorso));
+                    aux++;
+                }
+            }
+        }
+        givePositions();
+        // console.log(cards_arr[0]);
+        // console.log(cards_arr[0].image.id);
+
+        canvas.addEventListener("click", (e)=>{
+            flipped_card = '';
+            for(let i = 0; i < cards_arr.length; i++){
+                cards_arr[i].click(e.offsetX, e.offsetY);
+                if(cards_arr[i].flipped){
+                    // console.log("id", cards_arr[i].image.id);
+                    flipped_card = cards_arr[i].image.id;
+                }
+            }
+            console.log("id", flipped_card);
+            // console.log(e);
+        })
+
+        function repaint(){
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, 1500, 600);
+            for(let i = 0; i < cards_arr.length; i++){
+                cards_arr[i].paint();
+            }
+        }
+        console.log(cards_arr);
+        function update(){
+            window.requestAnimationFrame(update);
+            // repaint();
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, 1500, 600);
+            for(let i = 0; i < cards_arr.length; i++){
+                cards_arr[i].paint();
+            }
+        }
+
+        window.requestAnimationFrame = (function () {
+            return window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 17);
+                };
+        }());
+        window.requestAnimationFrame(update);
+
+    </script>
+</body>
+</html>
